@@ -5,25 +5,35 @@ import { sendResetEmail } from "../utils/sendEmail.js";
 
 /* FORGOT PASSWORD */
 export const forgotPassword = async (req, res) => {
-  const { email } = req.body;
+  try {
+    const { email } = req.body;
 
-  const user = await User.findOne({ email });
+    const user = await User.findOne({ email });
 
-  if (!user) {
-    return res.json({ message: "User not found" });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const token = crypto.randomBytes(32).toString("hex");
+
+    user.resetToken = token;
+    user.resetTokenExpiry = Date.now() + 15 * 60 * 1000;
+    await user.save();
+
+    const resetLink = `${process.env.FRONTEND_URL}/reset-password/${token}`;
+
+    await sendResetEmail(email, resetLink);
+
+    res.json({ message: "Reset email sent" });
+
+  } catch (error) {
+    console.error("❌ Forgot password error:", error);
+    res.status(500).json({
+      message: "Server error. Please try again later."
+    });
   }
-
-  const token = crypto.randomBytes(32).toString("hex");
-
-  user.resetToken = token;
-  user.resetTokenExpiry = Date.now() + 15 * 60 * 1000;
-  await user.save();
-
-  const resetLink = `${process.env.FRONTEND_URL}/reset-password/${token}`;
-  await sendResetEmail(email, resetLink);
-
-  res.json({ message: "Reset email sent" });
 };
+
 
 /* VERIFY TOKEN */
 export const verifyToken = async (req, res) => {
