@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "https://password-reset-kiwb.onrender.com/api/auth",
+  baseURL: process.env.REACT_APP_API_URL,
 });
 
 export default api;
